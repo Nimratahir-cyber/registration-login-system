@@ -1,9 +1,12 @@
 #include<iostream>
 #include<windows.h>
-#include<sstream>
+#include<vector>
 #include<fstream>
+#include<sstream>
+#include<conio.h>
 using namespace std;
-// to remove starting and ending spaces from a string
+
+// ---------------- Utility ----------------
 string trim(string s)
 {
     int start = 0, end = s.length() - 1;
@@ -17,123 +20,227 @@ string trim(string s)
     return s.substr(start, end - start + 1);
 }
 
-//-------------------class to login-----------------
-class login{
-private:
-    string username, password;
+// ---------------- Bank Class ----------------
+class BankAccount {
 public:
-    void setter(string uname,string  pword)
-     {
-        username=uname;
-        password=pword;
-     }
-     string getter(){
-        return username +" | "+ password;
-     }
-     
+    string name;
+    int balance = 0;
+
+    void deposit(int money) {
+        balance += money;
+    }
+
+    bool withdraw(int money) {
+        if (money <= balance) {
+            balance -= money;
+            return true;
+        }
+        return false;
+    }
+
+    void showBalance() {
+        cout << "Your balance: Rs. " << balance << endl;
+    }
 };
 
-//--------------------to register for a website-----------------
-void registration()
-{
-    system("cls");
-    login l;
-    string uname, pword;
-    cout<<"enter your name"<<endl;
-    getline(cin,uname);
-    cout<<"enter a strong password"<<endl;
-    start:
-    getline(cin,pword);
-    if(pword.length()<8){
-    cout<<"please enter password that has 8 or more characters"<<endl;
-    goto start;
+// ---------------- Login Class ----------------
+class Login {
+private:
+    string username, password;
+
+public:
+    void set(string uname, string pword) {
+        username = uname;
+        password = pword;
     }
-    else{
-        l.setter(uname,pword);
-        ofstream outfile("thisfile.txt", ios::app);
-        if(!outfile){
-            cout<<"oops! there's an error in opening the file"<<endl;
+
+    string get() {
+        return username + " | " + password;
+    }
+};
+
+// ---------------- Global Storage ----------------
+vector<BankAccount> accounts;
+BankAccount* currentUser = nullptr;
+
+// ---------------- Bank System ----------------
+void bankMenu() {
+    int choice;
+
+    do {
+
+        cout << "\n------ Bank Menu ------\n";
+        cout << "1. Deposit\n";
+        cout << "2. Withdraw\n";
+        cout << "3. Check Balance\n";
+        cout << "4. Logout\n";
+        cout << "Enter choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1: {
+            int money;
+            cout << "Enter amount: ";
+            cin >> money;
+            currentUser->deposit(money);
+            cout<<"money deposited successfully!"<<endl;
+            getch();
+            Sleep(1000);
+            system("cls");
+            break;
         }
-        outfile << l.getter()<<endl;
-        outfile.close();
-        cout<<"you have been registered successfully !"<<endl;
-        Sleep(3000);
+        case 2: {
+            int money;
+            cout << "Enter amount: ";
+            cin >> money;
+            if (currentUser->withdraw(money))
+                cout << "Withdraw successful\n";
+            else
+                cout << "Insufficient balance\n";
+                getch();
+                Sleep(1000);
+                system("cls");
+            break;
+        }
+        case 3:
+            currentUser->showBalance();
+            getch();
+            Sleep(1000);
+            system("cls");
+            break;
+        case 4:
+            cout << "Logging out";
+            for(int i=0;i<3;i++){
+                cout<<".";
+                Sleep(500);
+            }
+            cout<<endl;
+            system("cls");
+            currentUser=nullptr;
+            break;
+        default:
+            cout << "Invalid choice\n";
+        }
+
+    } while (choice != 4);
+}
+
+// ---------------- Registration ----------------
+void registerUser() {
+    system("cls");
+
+    string uname, pword;
+
+    cout << "Enter username: ";
+    getline(cin, uname);
+
+    do {
+        cout << "Enter password (min 8 chars): ";
+        getline(cin, pword);
+    } while (pword.length() < 8);
+
+    Login l;
+    l.set(uname, pword);
+
+    ofstream file("users.txt", ios::app);
+    file << l.get() << endl;
+    file.close();
+
+    // create bank account
+    BankAccount acc;
+    acc.name = uname;
+    accounts.push_back(acc);
+
+    cout << "Registered successfully!\n";
+    Sleep(1500);
+    system("cls");
+}
+
+// ---------------- Login ----------------
+void loginUser() {
+    system("cls");
+
+    string uname, pword;
+    cout << "Enter username: ";
+    getline(cin, uname);
+    cout << "Enter password: ";
+    getline(cin, pword);
+
+    ifstream file("users.txt");
+    string line;
+    bool found = false;
+
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string u, p;
+
+        getline(ss, u, '|');
+        getline(ss, p, '|');
+
+        u = trim(u);
+        p = trim(p);
+
+        if (u == uname && p == pword) {
+            found = true;
+
+            cout << "Logging in";
+            for (int i = 0; i < 3; i++) {
+                cout << ".";
+                Sleep(500);
+            }
+            cout<<endl;
+            system("cls");
+
+            // find user account
+            for (auto &acc : accounts) {
+                if (acc.name == uname) {
+                    currentUser = &acc;
+                    bankMenu();
+                    return;
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        cout << "Invalid credentials\n";
+        getch();
+        Sleep(1000);
         system("cls");
     }
 
+    file.close();
 }
 
-//--------------------to login to where you already registered--------------
-void loginfunc(){
-    system("cls");
-    string uname, pword;
-    cout<<"enter your name"<<endl;
-    getline(cin,uname);
-    cout<<"enter your password"<<endl;
-    getline(cin,pword);
-    ifstream infile("thisfile.txt");
-    string line;
-    bool found=false;
-    while(getline(infile,line)){
-        stringstream ss(line);
-        string username, password;
-        getline(ss,username, '|');
-        getline(ss,password, '|');
-        username=trim(username);
-        password=trim(password);
-        if(uname==username && pword==password){
-
-            cout<<"please wait";
-            for(int i=0;i<4;i++){
-                cout<<". ";
-                Sleep(1000);
-            }
-            cout<<"\nyou have logged in successfully" <<endl;
-            cout<<"\n\n---------------Welcome to this page---------------"<<endl;
-            found=true;
-            break;
-        }
-
-    }
-            if(!found){
-            cout<<"incorrect username or password"<<endl;
-        }
-        infile.close();
-        Sleep(2000);
-        system("cls");           
-}
-
-//-------------exit from login page-------------
-void exit(){
-    cout<<"exiting the program";
-     for(int i=0;i<4;i++){
-                cout<<". ";
-                Sleep(1000);
-     }
-
-}
-int main(){
+// ---------------- Main ----------------
+int main() {
     int choice;
-    while(choice!=3){
-    cout<<"---------------registration page-----------"<<endl;
-    cout<<"1. register to this website"<<endl;
-    cout<<"2. login to this website"<<endl;
-    cout<<"3. exit from this website"<<endl;
-    cout<<"enter your choice :"<<endl;
-    cin>>choice;
-    cin.ignore();
-    switch(choice){
+
+    do {
+        cout << "\n------ Main Menu ------\n";
+        cout << "1. Register\n";
+        cout << "2. Login\n";
+        cout << "3. Exit\n";
+        cout << "Enter choice: ";
+
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
         case 1:
-        registration();
-        break;
+            registerUser();
+            break;
         case 2:
-        loginfunc();
-        break;
+            loginUser();
+            break;
         case 3:
-        exit();
-        break;
+            cout << "Exiting...\n";
+            break;
         default:
-        cout<<"invalid input"<<endl;
-    }
-    }
+            cout << "Invalid input\n";
+        }
+
+    } while (choice != 3);
+
+    return 0;
 }
